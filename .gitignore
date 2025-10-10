@@ -1,3 +1,8 @@
+run_choose_answer.sh
+run_extract.sh
+build_main_py.sh
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
