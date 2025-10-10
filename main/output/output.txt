@@ -1,0 +1,7 @@
+├── output/
+│   └── public_test_output/
+│       ├── answer.md
+│       ├── main.py             # File code tổng hợp để nộp
+│       └── <pdf_name_1>/       # Thư mục kết quả trích xuất
+│           ├── main.md
+│           └── images/

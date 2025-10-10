@@ -1,0 +1,5 @@
+├── models/
+│   ├── embedding_model/
+│   │   └── ... (Các file của mô hình embedding)
+│   └── llm_qa_model/
+│       └── ... (Các file của mô hình LLM cho QA)
