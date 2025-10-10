@@ -1,1 +1,0 @@
-# Script chính để chạy luồng trích xuất

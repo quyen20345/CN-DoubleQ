@@ -1,2 +1,0 @@
-├── index/
-│   └── faiss_index.bin (Hoặc file index của ChromaDB, v.v...)

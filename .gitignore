@@ -1,7 +1,7 @@
 run_choose_answer.sh
 run_extract.sh
 build_main_py.sh
-
+main/src/embedding/models
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

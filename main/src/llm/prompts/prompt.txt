@@ -1,0 +1,13 @@
+Dựa trên thông tin từ các tài liệu dưới đây, hãy trả lời câu hỏi bằng tiếng Việt, ngắn gọn, chính xác và chỉ dựa vào nội dung có trong tài liệu. 
+Nếu không tìm thấy thông tin, trả lời "Không tìm thấy thông tin".
+
+Tài liệu:
+{% for doc in docs -%}
+---
+{{ doc }}
+{% endfor -%}
+----
+
+Câu hỏi: {{ question }}
+
+Trả lời:

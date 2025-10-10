@@ -1,6 +1,0 @@
-│   ├── extraction/
-│   │   ├── init.py
-│   │   ├── pdf_parser.py       # Đọc text, layout từ PDF
-│   │   ├── table_extractor.py    # Chuyên trích xuất và phân tích bảng
-│   │   ├── asset_extractor.py    # Trích xuất ảnh, công thức
-│   │   └── markdown_formatter.py # Định dạng output ra file .md

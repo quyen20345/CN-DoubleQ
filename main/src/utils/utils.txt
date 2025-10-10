@@ -1,3 +1,0 @@
-│   ├── utils/
-│   │   ├── init.py
-│   │   └── helpers.py          # Các hàm tiện ích dùng chung (đọc file, ghi log)

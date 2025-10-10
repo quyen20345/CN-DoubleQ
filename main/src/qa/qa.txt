@@ -1,5 +1,0 @@
-│   ├── qa/
-│   │   ├── init.py
-│   │   ├── indexer.py          # Đọc file .md, chunking và tạo index
-│   │   ├── retriever.py        # Tìm kiếm văn bản liên quan từ index
-│   │   └── answer_generator.py # Dùng LLM để sinh câu trả lời
