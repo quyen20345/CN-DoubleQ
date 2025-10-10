@@ -5,6 +5,8 @@ main/src/embedding/models
 main/data
 main/data/training_out
 main/src/embedding_models
+main/output
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

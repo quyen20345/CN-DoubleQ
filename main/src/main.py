@@ -265,7 +265,8 @@ class PDFExtractor:
 
     def extract_all_pdfs(self, input_dir, output_base_dir):
         extracted_data = {}
-        pdf_files = list(Path(input_dir).glob("*.pdf"))
+        # Sửa lỗi: Tìm kiếm file .pdf trong cả các thư mục con
+        pdf_files = list(Path(input_dir).rglob("*.pdf"))
         
         if not pdf_files:
             print(f"Cảnh báo: Không tìm thấy file PDF nào trong '{input_dir}'")
@@ -464,16 +465,27 @@ class AnswerGenerator:
 # ==============================================================================
 def setup_paths(mode):
     """Thiết lập đường dẫn input và output dựa trên mode."""
-    base_input_dir = Path(f"data/{mode}_test_input")
+    # Sửa lỗi: Trỏ đến đúng thư mục data theo prepare_data.sh
+    base_input_dir = Path(f"main/data/{mode}_test_input")
     output_dir = Path(f"output/{mode}_test_output")
     
     # Tạo các thư mục nếu chưa tồn tại
     base_input_dir.mkdir(parents=True, exist_ok=True)
     output_dir.mkdir(parents=True, exist_ok=True)
     
+    # Sửa lỗi: Tìm file question.csv trong cả các thư mục con
+    question_csv_paths = list(base_input_dir.rglob("question.csv"))
+    if not question_csv_paths:
+        # Nếu không tìm thấy, giữ đường dẫn cũ để báo lỗi rõ ràng
+        question_csv_path = base_input_dir / "question.csv"
+    else:
+        # Lấy đường dẫn đầu tiên tìm được
+        question_csv_path = question_csv_paths[0]
+        print(f"Đã tìm thấy file question.csv tại: {question_csv_path}")
+
     paths = {
         "pdf_dir": base_input_dir,
-        "question_csv": base_input_dir / "question.csv",
+        "question_csv": question_csv_path,
         "output_dir": output_dir,
         "zip_name": f"{mode}_test_output.zip"
     }
@@ -586,6 +598,6 @@ def main():
 
 
 if __name__ == "__main__":
-    # Đặt thư mục làm việc là thư mục chứa file script
-    os.chdir(Path(__file__).parent)
+    # Sửa lỗi: Xóa dòng os.chdir để đảm bảo script chạy đúng từ thư mục gốc của project.
     main()
+
