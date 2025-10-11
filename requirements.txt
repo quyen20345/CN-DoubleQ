@@ -1,0 +1,29 @@
+# Core dependencies
+pandas==2.2.2
+python-dotenv==1.0.1
+
+# PDF processing
+PyMuPDF==1.23.26
+pdfplumber==0.10.4
+docling==0.0.15
+fitz
+
+# Machine Learning & Embeddings
+sentence-transformers==3.0.1
+torch>=2.0.0
+transformers>=4.30.0
+
+# Vector Database
+qdrant-client==1.9.2
+
+# LLM Integration
+langchain==0.2.6
+langchain-ollama==0.1.0
+jinja2==3.1.4
+
+# Text processing
+tiktoken==0.7.0
+
+# Additional utilities
+pathlib2>=2.3.7
+typing-extensions>=4.0.0
