@@ -15,7 +15,7 @@ from pathlib import Path
 project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(project_root))
 
-from main.extract_pdf import PDFExtractor
+from main.extract_pdf import PDFToMarkdownConverter as PDFExtractor
 from main.src.embedding.model import DenseEmbedding
 from main.src.vectordb.qdrant import VectorStore
 from main.src.utils.indexer import index_extracted_data
@@ -24,7 +24,9 @@ from main.src.answer_generator import QAHandler, AnswerGenerator
 
 def setup_paths(mode: str) -> dict:
     """Thiết lập và xác thực các đường dẫn input và output."""
-    base_input_dir = project_root / f"main/data/{mode}_test_input"
+    # base_input_dir = project_root / f"main/data/{mode}_test_input"
+    base_input_dir = project_root / f"main/data/{mode}_test_input/{mode}-test-input"
+
     output_dir = project_root / f"output/{mode}_test_output"
 
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -54,23 +56,49 @@ def setup_paths(mode: str) -> dict:
     return paths
 
 def run_task_extract(paths: dict) -> bool:
-    """Chạy tác vụ trích xuất PDF và index dữ liệu."""
+    """Chạy tác vụ trích xuất PDF bằng module extract_pdf.py và index dữ liệu."""
     print("\n" + "="*25 + " BẮT ĐẦU TÁC VỤ EXTRACT " + "="*25)
     
-    extractor = PDFExtractor()
+    from main.extract_pdf import PDFToMarkdownConverter  # dùng converter mới
+
+    converter = PDFToMarkdownConverter()
+    input_dir = Path(paths["pdf_dir"])
+    
+    # Output sẽ nằm trong: output/public_test_output/
+    base_output_dir = Path(paths["output_dir"])
+    base_output_dir.mkdir(parents=True, exist_ok=True)
+
+    extracted_data = {}
+
+    for pdf_file in input_dir.glob("*.pdf"):
+        # Mỗi file PDF có thư mục riêng: output/public_test_output/<PDF_NAME>/images/
+        pdf_output_dir = base_output_dir / pdf_file.stem / "images"
+        pdf_output_dir.mkdir(parents=True, exist_ok=True)
+
+        try:
+            md_path = converter.convert_pdf_to_markdown(str(pdf_file), str(pdf_output_dir))
+            # Lưu text markdown đã trích xuất để index
+            if md_path and Path(md_path).exists():
+                extracted_data[pdf_file.stem] = Path(md_path).read_text(encoding="utf-8")
+            print(f"✅ Trích xuất thành công: {pdf_file.name}")
+        except Exception as e:
+            print(f"❌ Lỗi khi xử lý {pdf_file.name}: {e}")
+            import traceback
+            traceback.print_exc()
+
+    if not extracted_data:
+        print("❌ Không có file PDF nào được xử lý thành công.")
+        return False
+
+    # Index dữ liệu vào vector DB (giữ nguyên pipeline cũ)
     embedding_model = DenseEmbedding()
     collection_name = f"collection_{paths['pdf_dir'].name}"
     vector_db = VectorStore(collection_name, embedding_model)
-    
-    extracted_data = extractor.extract_all_pdfs(paths["pdf_dir"], paths["output_dir"])
-    if not extracted_data:
-        print("❌ Kết thúc tác vụ extract vì không có dữ liệu PDF.")
-        return False
-
     index_extracted_data(extracted_data, vector_db)
-    
+
     print("\n" + "="*24 + " HOÀN THÀNH TÁC VỤ EXTRACT " + "="*24)
     return True
+
 
 def run_task_qa(paths: dict):
     """Chạy tác vụ trả lời câu hỏi và tạo file nộp bài."""

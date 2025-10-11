@@ -145,15 +145,39 @@ class AnswerGenerator:
             for count, answers in qa_results:
                 if not answers:  # ✅ đảm bảo không rỗng
                     count, answers = 1, ["A"]
-                f.write(f"{count},{','.join(answers)}\n")
+
+                # ✅ Nếu có nhiều đáp án, dùng ngoặc kép "A,B"
+                if len(answers) > 1:
+                    answers_str = f"\"{','.join(answers)}\""
+                else:
+                    answers_str = answers[0]
+
+                f.write(f"{count},{answers_str}\n")
 
         print("✅ Đã tạo file answer.md thành công.")
 
     def create_zip(self, zip_name: str):
-        """Tạo file .zip từ thư mục output."""
-        project_root = self.output_dir.parent 
+        """Tạo file .zip theo cấu trúc chuẩn:
+        zip_name.zip
+        ├── answer.md
+        └── output_dir/
+            ├── main.py
+            ├── Publicxxx/
+            └── ...
+        """
+        project_root = self.output_dir.parent
         zip_path = project_root / zip_name
-        
-        print(f"\n📦 Đang nén thư mục '{self.output_dir.name}' thành file '{zip_path}'...")
-        shutil.make_archive(str(zip_path.with_suffix('')), 'zip', self.output_dir)
+
+        print(f"\n📦 Đang nén '{self.output_dir}' thành '{zip_path}'...")
+
+        with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zipf:
+            # 1️⃣ Thêm file answer.md ở ngoài cùng
+            zipf.write(self.answer_md_path, arcname="answer.md")
+
+            # 2️⃣ Thêm toàn bộ nội dung trong output_dir (public_test_output)
+            for file_path in self.output_dir.rglob("*"):
+                if file_path.is_file():
+                    arcname = Path(self.output_dir.name) / file_path.relative_to(self.output_dir)
+                    zipf.write(file_path, arcname=arcname)
+
         print(f"✅ Đã tạo file zip thành công tại: {zip_path}")
