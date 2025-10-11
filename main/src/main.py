@@ -426,6 +426,9 @@ class AnswerGenerator:
         self.output_dir.mkdir(parents=True, exist_ok=True)
     
     def generate_answer_md(self, extracted_data, qa_results):
+        """
+        Tạo file answer.md với phần QA theo định dạng CSV.
+        """
         content = []
         
         # Phần 1: TASK EXTRACT
@@ -434,18 +437,30 @@ class AnswerGenerator:
             content.append(f"\n# {pdf_name}\n")
             content.append(md_content)
         
-        # Phần 2: TASK QA
-        content.append("\n### TASK QA\n")
+        # Phần 2: TASK QA (Định dạng CSV)
+        content.append("\n### TASK QA")
         if qa_results:
+            # Thêm header cho CSV
+            content.append("num_correct,answers")
             for count, answers in qa_results:
-                content.append(f"{count}")
-                content.append(f"{','.join(sorted(answers))}")
+                # Sắp xếp các đáp án để đảm bảo thứ tự nhất quán
+                sorted_answers = sorted(answers)
+                # Ghép các đáp án thành một chuỗi, ví dụ: "A,B"
+                formatted_answers = ",".join(sorted_answers)
+                
+                # Nếu có nhiều hơn một đáp án, đặt chuỗi vào trong dấu ngoặc kép
+                if len(sorted_answers) > 1:
+                    formatted_answers = f'"{formatted_answers}"'
+                
+                # Thêm dòng CSV vào nội dung
+                content.append(f"{count},{formatted_answers}")
         
         answer_md_path = self.output_dir / "answer.md"
         with open(answer_md_path, 'w', encoding='utf-8') as f:
             f.write('\n'.join(content))
         
         print(f"✅ Đã tạo file answer.md tại: {answer_md_path}")
+
 
     def create_zip(self, zip_name):
         zip_path = self.output_dir.parent / zip_name
@@ -600,4 +615,3 @@ def main():
 if __name__ == "__main__":
     # Sửa lỗi: Xóa dòng os.chdir để đảm bảo script chạy đúng từ thư mục gốc của project.
     main()
-
