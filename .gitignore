@@ -1,6 +1,3 @@
-run_choose_answer.sh
-run_extract.sh
-build_main_py.sh
 main/src/embedding/models
 main/data
 main/data/training_out

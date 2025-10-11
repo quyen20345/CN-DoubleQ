@@ -106,207 +106,11 @@ Khi chạy tệp run_extract.sh, hệ thống phải tự động chuyển đổ
 
 Khi chạy tệp run_choose_answer.sh, hệ thống phải tự động duyệt qua các câu hỏi do BTC cung cấp và xuất ra tệp kết quả tương tự kết quả nộp.
 
-│ ├── data
-
-│ │ ├── public_test_input
-
-│ │ │ └── public-test-input
-
-│ │ │ ├── Public061.pdf
-
-│ │ │ ├── Public062.pdf
-
-│ │ │ ├── Public063.pdf
-
-│ │ │ ├── Public064.pdf
-
-│ │ │ ├── Public065.pdf
-
-│ │ │ ├── Public066.pdf
-
-│ │ │ ├── Public067.pdf
-
-│ │ │ ├── Public068.pdf
-
-│ │ │ ├── Public069.pdf
-
-│ │ │ ├── Public070.pdf
-
-│ │ │ ├── Public071.pdf
-
-│ │ │ ├── Public072.pdf
-
-│ │ │ ├── Public073.pdf
-
-│ │ │ ├── Public074.pdf
-
-│ │ │ ├── Public075.pdf
-
-│ │ │ ├── Public076.pdf
-
-│ │ │ ├── Public077.pdf
-
-│ │ │ ├── Public078.pdf
-
-│ │ │ ├── Public079.pdf
-
-│ │ │ ├── Public080.pdf
-
-│ │ │ └── question.csv
-
-│ │ ├── public-test-input.zip
-
-│ │ ├── training_input.zip
-
-│ │ ├── training_out
-
-│ │ │ ├── Public001
-
-│ │ │ │ ├── images
-
-│ │ │ │ └── main.md
-
-│ │ │ └── Public002
-
-│ │ │ ├── images
-
-│ │ │ └── main.md
-
-│ │ ├── training_out.zip
-
-│ │ └── training_test_input
-
-│ │ └── training_input
-
-│ │ ├── Public001.pdf
-
-│ │ ├── Public002.pdf
-
-│ │ ├── Public003.pdf
-
-│ │ ├── Public004.pdf
-
-│ │ ├── Public005.pdf
-
-│ │ ├── Public006.pdf
-
-│ │ ├── Public007.pdf
-
-│ │ ├── Public008.pdf
-
-│ │ ├── Public009.pdf
-
-│ │ ├── Public010.pdf
-
-│ │ ├── Public011.pdf
-
-│ │ ├── Public012.pdf
-
-│ │ ├── Public013.pdf
-
-│ │ ├── Public014.pdf
-
-│ │ ├── Public015.pdf
-
-│ │ ├── Public016.pdf
-
-│ │ ├── Public017.pdf
-
-│ │ ├── Public018.pdf
-
-│ │ ├── Public019.pdf
-
-│ │ ├── Public020.pdf
-
-│ │ ├── Public021.pdf
-
-│ │ ├── Public022.pdf
-
-│ │ ├── Public023.pdf
-
-│ │ ├── Public024.pdf
-
-│ │ ├── Public025.pdf
-
-│ │ ├── Public026.pdf
-
-│ │ ├── Public027.pdf
-
-│ │ ├── Public028.pdf
-
-│ │ ├── Public029.pdf
-
-│ │ ├── Public030.pdf
-
-│ │ ├── Public031.pdf
-
-│ │ ├── Public032.pdf
-
-│ │ ├── Public033.pdf
-
-│ │ ├── Public034.pdf
-
-│ │ ├── Public035.pdf
-
-│ │ ├── Public036.pdf
-
-│ │ ├── Public037.pdf
-
-│ │ ├── Public038.pdf
-
-│ │ ├── Public039.pdf
-
-│ │ ├── Public040.pdf
-
-│ │ ├── Public041.pdf
-
-│ │ ├── Public042.pdf
-
-│ │ ├── Public043.pdf
-
-│ │ ├── Public044.pdf
-
-│ │ ├── Public045.pdf
-
-│ │ ├── Public046.pdf
-
-│ │ ├── Public047.pdf
-
-│ │ ├── Public048.pdf
-
-│ │ ├── Public049.pdf
-
-│ │ ├── Public050.pdf
-
-│ │ ├── Public051.pdf
-
-│ │ ├── Public052.pdf
-
-│ │ ├── Public053.pdf
-
-│ │ ├── Public054.pdf
-
-│ │ ├── Public055.pdf
-
-│ │ ├── Public056.pdf
-
-│ │ ├── Public057.pdf
-
-│ │ ├── Public058.pdf
-
-│ │ ├── Public059.pdf
-
-│ │ ├── Public060.pdf
-
-│ │ └── question.csv
-
-(pyenv310) quyen@Lenovo:~/Documents/CN-DoubleQ$ tree -L 5
+(base) quyen@Lenovo:~/Documents/CN-DoubleQ$ tree -L 5
 .
 ├── docker-compose.yaml
 ├── LICENSE
 ├── main
-│   ├── configs
-│   │   └── config.yaml
 │   ├── data
 │   │   ├── data_description.txt
 │   │   ├── public_test_input
@@ -398,6 +202,7 @@ Khi chạy tệp run_choose_answer.sh, hệ thống phải tự động duyệt 
 │   │           ├── Public059.pdf
 │   │           ├── Public060.pdf
 │   │           └── question.csv
+│   ├── extract_pdf.py
 │   ├── __init__.py
 │   ├── output
 │   │   └── public_test_output
@@ -464,8 +269,7 @@ Khi chạy tệp run_choose_answer.sh, hệ thống phải tự động duyệt 
 │   ├── __pycache__
 │   │   └── __init__.cpython-310.pyc
 │   └── src
-│       ├── data
-│       │   └── public_test_input
+│       ├── answer_generator.py
 │       ├── embedding
 │       │   ├── __init__.py
 │       │   ├── model.py
@@ -501,13 +305,13 @@ Khi chạy tệp run_choose_answer.sh, hệ thống phải tự động duyệt 
 │       │   └── _utils.py
 │       ├── main.py
 │       ├── output
-│       │   └── public_test_output
 │       ├── __pycache__
 │       │   ├── __init__.cpython-310.pyc
 │       │   ├── __init__.cpython-313.pyc
 │       │   ├── main.cpython-310.pyc
 │       │   └── main.cpython-313.pyc
 │       ├── utils
+│       │   ├── chunking.py
 │       │   ├── collections.py
 │       │   ├── indexer.py
 │       │   ├── __init__.py
@@ -524,12 +328,78 @@ Khi chạy tệp run_choose_answer.sh, hệ thống phải tự động duyệt 
 │           │   └── qdrant.cpython-310.pyc
 │           └── qdrant.py
 ├── output
+│   ├── answer.md
 │   └── public_test_output
+│       ├── answer.md
+│       ├── main.py
+│       ├── Public061
+│       │   ├── images
+│       │   └── main.md
+│       ├── Public062
+│       │   ├── images
+│       │   └── main.md
+│       ├── Public063
+│       │   ├── images
+│       │   └── main.md
+│       ├── Public064
+│       │   ├── images
+│       │   └── main.md
+│       ├── Public065
+│       │   ├── images
+│       │   └── main.md
+│       ├── Public066
+│       │   ├── images
+│       │   └── main.md
+│       ├── Public067
+│       │   ├── images
+│       │   └── main.md
+│       ├── Public068
+│       │   ├── images
+│       │   └── main.md
+│       ├── Public069
+│       │   ├── images
+│       │   └── main.md
+│       ├── Public070
+│       │   ├── images
+│       │   └── main.md
+│       ├── Public071
+│       │   ├── images
+│       │   └── main.md
+│       ├── Public072
+│       │   ├── images
+│       │   └── main.md
+│       ├── Public073
+│       │   ├── images
+│       │   └── main.md
+│       ├── Public074
+│       │   ├── images
+│       │   └── main.md
+│       ├── Public075
+│       │   ├── images
+│       │   └── main.md
+│       ├── Public076
+│       │   ├── images
+│       │   └── main.md
+│       ├── Public077
+│       │   ├── images
+│       │   └── main.md
+│       ├── Public078
+│       │   ├── images
+│       │   └── main.md
+│       ├── Public079
+│       │   ├── images
+│       │   └── main.md
+│       └── Public080
+│           ├── images
+│           └── main.md
 ├── prepare_data.sh
 ├── README.md
 ├── requirements.txt
 ├── run_choose_answer.sh
-└── run_extract.sh
+├── run_extract.sh
+└── savefile
+    ├── extract_pdf.py
+    └── main.py
 
-79 directories, 150 files
-(pyenv310) quyen@Lenovo:~/Documents/CN-DoubleQ$ 
+116 directories, 177 files
+(base) quyen@Lenovo:~/Documents/CN-DoubleQ$ 

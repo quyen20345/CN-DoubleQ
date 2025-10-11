@@ -1,6 +1,6 @@
 from main.src.utils._utils import get_files_in_directory, load_file_as_markdown
 from main.src.utils.collections import COLLECTIONS
-from main.src.utils._utils import chunking
+from main.src.utils.chunking import chunking
 from main.src.vectordb.qdrant import VectorStore
 
 def preprocess_file(path):

@@ -3,6 +3,8 @@ import re
 import json
 import pandas as pd
 from pathlib import Path
+import shutil
+import zipfile
 
 from main.src.llm.llm_integrations import get_llm
 from main.src.vectordb.qdrant import VectorStore
@@ -100,3 +102,45 @@ class QAHandler:
             print(f"  ➜ Kết quả: {count} câu đúng - Đáp án: {', '.join(answers) if answers else 'Không có'}")
         
         return results
+
+
+# === BỔ SUNG LỚP BỊ THIẾU ===
+class AnswerGenerator:
+    """Tạo file answer.md và file .zip để nộp bài."""
+    def __init__(self, output_dir: Path):
+        self.output_dir = output_dir
+        self.answer_md_path = self.output_dir / "answer.md"
+
+    def generate_answer_md(self, extracted_data: dict, qa_results: list):
+        """Tạo nội dung file answer.md tổng hợp."""
+        print(f"\n📝 Đang tạo file kết quả tại: {self.answer_md_path}")
+        with self.answer_md_path.open("w", encoding="utf-8") as f:
+            # --- Phần 1: Trích xuất ---
+            f.write("### TASK EXTRACT\n\n")
+            # Sắp xếp theo tên file PDF để đảm bảo thứ tự nhất quán
+            for pdf_name in sorted(extracted_data.keys()):
+                content = extracted_data[pdf_name]
+                f.write(f"# {pdf_name}\n")
+                f.write(content)
+                f.write("\n\n")
+            
+            # --- Phần 2: QA ---
+            f.write("### TASK QA\n\n")
+            for count, answers in qa_results:
+                answers_str = ", ".join(answers) if answers else ""
+                f.write(f"{count}\n")
+                f.write(f"[{answers_str}]\n")
+        
+        print("✅ Đã tạo file answer.md thành công.")
+
+    def create_zip(self, zip_name: str):
+        """Tạo file .zip từ thư mục output."""
+        # file zip sẽ được tạo ở thư mục gốc của project, bên ngoài thư mục output
+        project_root = self.output_dir.parent 
+        zip_path = project_root / zip_name
+        
+        print(f"\n📦 Đang nén thư mục '{self.output_dir.name}' thành file '{zip_path}'...")
+        
+        shutil.make_archive(str(zip_path.with_suffix('')), 'zip', self.output_dir)
+                
+        print(f"✅ Đã tạo file zip thành công tại: {zip_path}")

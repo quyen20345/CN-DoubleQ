@@ -20,7 +20,7 @@ from main.src.embedding.model import DenseEmbedding
 from main.src.vectordb.qdrant import VectorStore
 from main.src.utils.indexer import index_extracted_data
 from main.src.llm.chat import QAHandler
-from main.src.answer_generator import AnswerGenerator
+from main.src.answer_generator import QAHandler, AnswerGenerator
 
 def setup_paths(mode: str) -> dict:
     """Thiết lập và xác thực các đường dẫn input và output."""
