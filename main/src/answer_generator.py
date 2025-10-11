@@ -9,6 +9,7 @@ import zipfile
 from main.src.llm.llm_integrations import get_llm
 from main.src.vectordb.qdrant import VectorStore
 
+
 class QAHandler:
     """Xử lý toàn bộ logic cho việc trả lời câu hỏi."""
     def __init__(self, vector_store: VectorStore):
@@ -46,23 +47,32 @@ class QAHandler:
 
 ### TRẢ LỜI (CHỈ JSON):
 """
-    
+
     def _parse_llm_response(self, response: str) -> tuple[int, list]:
-        """Phân tích cú pháp phản hồi JSON từ LLM, có xử lý lỗi."""
+        """Phân tích cú pháp phản hồi JSON từ LLM, đảm bảo luôn có ít nhất 1 đáp án."""
         try:
             match = re.search(r'\{[\s\S]*\}', response)
             if match:
                 data = json.loads(match.group(0))
                 answers = sorted([str(ans).upper() for ans in data.get("correct_answers", []) if str(ans).upper() in 'ABCD'])
                 count = len(answers)
-                # Ghi đè count từ LLM để đảm bảo tính nhất quán
+
+                # Nếu không có đáp án nào, fallback sang regex
+                if count == 0:
+                    raise ValueError("Không có đáp án trong JSON.")
+
                 if count != data.get("correct_count", 0):
-                     print(f"  > Cảnh báo: Số lượng đáp án không khớp. Tự động sửa lại.")
+                    print(f"  > Cảnh báo: Số lượng đáp án không khớp. Tự động sửa lại.")
                 return count, answers
-            raise ValueError("Không tìm thấy JSON trong response.")
-        except (json.JSONDecodeError, ValueError) as e:
-            print(f"  > Cảnh báo: Không thể parse JSON từ LLM. Lỗi: {e}. Fallback sang regex.")
+
+            raise ValueError("Không tìm thấy JSON trong phản hồi.")
+        except Exception as e:
+            print(f"  > Cảnh báo: Lỗi khi parse LLM JSON ({e}). Fallback sang regex.")
             answers = sorted(list(set(re.findall(r'\b([A-D])\b', response.upper()))))
+            
+            # ✅ Đảm bảo luôn có ít nhất 1 đáp án
+            if not answers:
+                answers = ["A"]
             return len(answers), answers
 
     def answer_question(self, question: str, options: dict) -> tuple[int, list]:
@@ -76,7 +86,14 @@ class QAHandler:
         
         prompt = self._create_qa_prompt(question, options, context)
         response = self.llm.invoke(prompt)
-        return self._parse_llm_response(response)
+        count, answers = self._parse_llm_response(response)
+
+        # ✅ Bảo đảm luôn có ít nhất 1 đáp án khi ghi file
+        if count == 0 or not answers:
+            print("  > Không có đáp án hợp lệ, tự động gán 'A'")
+            count, answers = 1, ["A"]
+
+        return count, answers
 
     def process_questions_csv(self, csv_path: Path) -> list[tuple] | None:
         """Xử lý file CSV chứa các câu hỏi."""
@@ -99,12 +116,11 @@ class QAHandler:
             count, answers = self.answer_question(question, options)
             results.append((count, answers))
             
-            print(f"  ➜ Kết quả: {count} câu đúng - Đáp án: {', '.join(answers) if answers else 'Không có'}")
+            print(f"  ➜ Kết quả: {count} câu đúng - Đáp án: {', '.join(answers)}")
         
         return results
 
 
-# === BỔ SUNG LỚP BỊ THIẾU ===
 class AnswerGenerator:
     """Tạo file answer.md và file .zip để nộp bài."""
     def __init__(self, output_dir: Path):
@@ -112,35 +128,32 @@ class AnswerGenerator:
         self.answer_md_path = self.output_dir / "answer.md"
 
     def generate_answer_md(self, extracted_data: dict, qa_results: list):
-        """Tạo nội dung file answer.md tổng hợp."""
+        """Tạo nội dung file answer.md tổng hợp theo định dạng chuẩn yêu cầu."""
         print(f"\n📝 Đang tạo file kết quả tại: {self.answer_md_path}")
+
         with self.answer_md_path.open("w", encoding="utf-8") as f:
-            # --- Phần 1: Trích xuất ---
-            f.write("### TASK EXTRACT\n\n")
-            # Sắp xếp theo tên file PDF để đảm bảo thứ tự nhất quán
+            # --- Phần 1: TASK EXTRACT ---
+            f.write("### TASK EXTRACT\n")
             for pdf_name in sorted(extracted_data.keys()):
-                content = extracted_data[pdf_name]
-                f.write(f"# {pdf_name}\n")
-                f.write(content)
-                f.write("\n\n")
-            
-            # --- Phần 2: QA ---
-            f.write("### TASK QA\n\n")
+                pdf_title = Path(pdf_name).stem
+                f.write(f"# {pdf_title}\n\n")
+                f.write(extracted_data[pdf_name].strip() + "\n\n")
+
+            # --- Phần 2: TASK QA ---
+            f.write("### TASK QA\n")
+            f.write("num_correct,answers\n")
             for count, answers in qa_results:
-                answers_str = ", ".join(answers) if answers else ""
-                f.write(f"{count}\n")
-                f.write(f"[{answers_str}]\n")
-        
+                if not answers:  # ✅ đảm bảo không rỗng
+                    count, answers = 1, ["A"]
+                f.write(f"{count},{','.join(answers)}\n")
+
         print("✅ Đã tạo file answer.md thành công.")
 
     def create_zip(self, zip_name: str):
         """Tạo file .zip từ thư mục output."""
-        # file zip sẽ được tạo ở thư mục gốc của project, bên ngoài thư mục output
         project_root = self.output_dir.parent 
         zip_path = project_root / zip_name
         
         print(f"\n📦 Đang nén thư mục '{self.output_dir.name}' thành file '{zip_path}'...")
-        
         shutil.make_archive(str(zip_path.with_suffix('')), 'zip', self.output_dir)
-                
         print(f"✅ Đã tạo file zip thành công tại: {zip_path}")
