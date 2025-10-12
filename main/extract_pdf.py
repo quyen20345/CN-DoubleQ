@@ -586,10 +586,12 @@ if __name__ == "__main__":
     base_dir = Path(__file__).resolve().parent.parent
 
     # Thư mục chứa input PDF
-    input_dir = base_dir / "main" / "data" / "public_test_input" / "public-test-input"
+    # input_dir = base_dir / "main" / "data" / "public_test_input" / "public-test-input"
+    input_dir = base_dir / "main" / "data" / "private_test_input" / "private-test-input" 
 
     # Thư mục output mong muốn
-    base_output_dir = base_dir / "output" / "public_test_output"
+    # base_output_dir = base_dir / "output" / "public_test_output"
+    base_output_dir = base_dir / "output" / "private_test_output"
     base_output_dir.mkdir(exist_ok=True, parents=True)
 
     for pdf_file in input_dir.glob("*.pdf"):

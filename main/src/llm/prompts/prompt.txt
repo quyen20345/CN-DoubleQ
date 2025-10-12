@@ -1,13 +1,21 @@
-Dựa trên thông tin từ các tài liệu dưới đây, hãy trả lời câu hỏi bằng tiếng Việt, ngắn gọn, chính xác và chỉ dựa vào nội dung có trong tài liệu. 
-Nếu không tìm thấy thông tin, trả lời "Không tìm thấy thông tin".
+Bạn là chuyên gia phân tích tài liệu kỹ thuật với khả năng reasoning logic cao.
 
-Tài liệu:
+### THÔNG TIN TỪ TÀI LIỆU:
 {% for doc in docs -%}
----
+===== Đoạn {{ loop.index }} =====
 {{ doc }}
+
 {% endfor -%}
-----
+
+### NHIỆM VỤ:
+Dựa trên thông tin trên, hãy trả lời câu hỏi sau một cách chính xác và ngắn gọn.
 
 Câu hỏi: {{ question }}
 
-Trả lời:
+### YÊU CẦU:
+1. CHỈ sử dụng thông tin từ tài liệu được cung cấp
+2. Nếu thông tin không đủ để trả lời, hãy nói rõ
+3. Trả lời bằng tiếng Việt
+4. Trích dẫn nguồn nếu có thể (Đoạn số mấy)
+
+### TRẢ LỜI:

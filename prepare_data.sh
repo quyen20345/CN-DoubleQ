@@ -44,6 +44,9 @@ fi
 # Xử lý public test data
 unzip_data "$DATA_DIR/public-test-input.zip" "$DATA_DIR/public_test_input"
 
+# Xử lý private test data
+unzip_data "$DATA_DIR/private-test-input.zip" "$DATA_DIR/private_test_input"
+
 # Xử lý training data
 unzip_data "$DATA_DIR/training_input.zip" "$DATA_DIR/training_test_input"
 

@@ -24,8 +24,13 @@ from main.src.answer_generator import QAHandler, AnswerGenerator
 
 def setup_paths(mode: str) -> dict:
     """Thiết lập và xác thực các đường dẫn input và output."""
-    # base_input_dir = project_root / f"main/data/{mode}_test_input"
-    base_input_dir = project_root / f"main/data/{mode}_test_input/{mode}-test-input"
+    # Xử lý cấu trúc thư mục khác nhau
+    if mode == "public":
+        base_input_dir = project_root / f"main/data/{mode}_test_input/{mode}-test-input"
+    elif mode == "private":
+        base_input_dir = project_root / f"main/data/{mode}_test_input/{mode}_test_input"
+    else:  # training
+        base_input_dir = project_root / f"main/data/{mode}_test_input/{mode}_input"
 
     output_dir = project_root / f"output/{mode}_test_output"
 
