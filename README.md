@@ -1,405 +1,226 @@
-# CN-DoubleQ
+# CN-DoubleQ - Khai phá tri thức từ văn bản kỹ thuật
 
-cd ~/Documents/CN-DoubleQ
-python3 -m main.src.main
+Dự án tham gia Zalo AI Challenge 2024 - Nhiệm vụ 2: Khai phá tri thức từ văn bản kỹ thuật.
 
+## 🎯 Mô tả dự án
 
-Dữ liệu:
+Hệ thống trích xuất và phân tích tài liệu PDF kỹ thuật, trả lời câu hỏi trắc nghiệm dựa trên nội dung đã trích xuất.
 
-training_out.zip
+### Tính năng chính:
+- **Trích xuất PDF**: Chuyển đổi tài liệu PDF thành Markdown với bảng, hình ảnh, công thức
+- **Vector Search**: Tìm kiếm thông tin bằng embedding model
+- **QA System**: Trả lời câu hỏi trắc nghiệm với độ chính xác cao
+- **Multi-mode**: Hỗ trợ public, private, training data
 
-public_test_input.zip
+## 🚀 Cài đặt
 
-training_input.zip
+### Yêu cầu hệ thống:
+- Python 3.8+
+- RAM: 8GB+ (khuyến nghị 16GB)
+- Disk: 10GB+ free space
 
-TÁC VỤ 2: KHAI PHÁ TRI THỨC TỪ VĂN BẢN KỸ THUẬT
+### Cài đặt dependencies:
 
-Trong các lĩnh vực công nghiệp, năng lượng, hàng không, hay y sinh, hàng triệu trang tài liệu kỹ thuật đang được tạo ra và lưu trữ dưới định dạng PDF mỗi ngày. Bên trong đó là vô vàn bảng biểu phức tạp: bảng trải dài hàng trăm trang, ô gộp chồng chéo, tiêu đề ngang dọc, ký hiệu toán học, thuật ngữ chuyên ngành song song cả tiếng Việt lẫn tiếng Anh. Những kho dữ liệu này chính là mỏ vàng tri thức, nhưng hiện nay phần lớn vẫn "nằm yên" dưới dạng văn bản khó truy cập.
+```bash
+# Clone repository
+git clone <repository-url>
+cd CN-DoubleQ
 
-Câu hỏi đặt ra: Làm thế nào để máy tính có thể tự động đọc, hiểu và trả lời truy vấn từ những bảng dữ liệu kỹ thuật khổng lồ này?
+# Cài đặt dependencies
+pip install -r requirements.txt
 
-Trong bối cảnh đó, hai nhu cầu quan trọng được xác định:
+# Khởi động Qdrant vector database
+docker-compose up -d
+```
 
-Trích xuất dữ liệu: Chuyển đổi những bảng PDF phức tạp thành cấu trúc dữ liệu số chính xác, có thể khai thác và lưu trữ.
+## 📁 Cấu trúc thư mục
 
-Truy vấn dữ liệu: Dựa trên dữ liệu văn bản đã được chuyển đổi, thí sinh thực hiện nhiệm vụ trả lời các câu hỏi trắc nghiệm có thể có nhiều đáp án đúng (Multiple Choice Q&A).
+```
+CN-DoubleQ/
+├── main/                          # Thư mục chính chứa source code
+│   ├── src/                       # Source code chính
+│   │   ├── embedding/             # Embedding models
+│   │   ├── llm/                   # LLM integration
+│   │   ├── utils/                 # Utilities
+│   │   ├── vectordb/              # Vector database
+│   │   └── main.py                # Entry point
+│   ├── data/                      # Dữ liệu input
+│   │   ├── public_test_input/     # Public test data
+│   │   ├── private_test_input/    # Private test data
+│   │   └── training_test_input/   # Training data
+│   └── extract_pdf.py             # PDF extraction module
+├── output/                        # Kết quả output
+├── docker-compose.yaml            # Docker configuration
+├── requirements.txt               # Python dependencies
+├── run_extract.sh                # Script trích xuất PDF
+├── run_choose_answer.sh          # Script trả lời câu hỏi
+└── prepare_data.sh               # Script chuẩn bị dữ liệu
+```
 
-Nhiệm vụ
+## 🚀 Hướng dẫn chạy dự án
 
-Thí sinh sẽ thực hiện hai nhiệm vụ mang tính nền tảng:
+### Bước 1: Chuẩn bị môi trường
 
-Nhiệm vụ 1: Trích xuất dữ liệu
+1. **Cài đặt Docker và Docker Compose** (nếu chưa có):
+```bash
+# Ubuntu/Debian
+sudo apt update
+sudo apt install docker.io docker-compose
 
-Biến các bảng dữ liệu PDF nhiều tầng lớp thành dữ liệu số chuẩn lưu dưới dạng .md, có thể dùng ngay cho phân tích. Các phương pháp trích xuất hướng tới giải quyết các thách thức từ dữ liệu PDF với các đặc trưng như sau:
+# Hoặc cài đặt Docker Desktop
+```
 
-Chứa watermark phức tạp.
+2. **Clone repository và cài đặt dependencies**:
+```bash
+# Clone repository
+git clone <repository-url>
+cd CN-DoubleQ
 
-Bảng dài hàng trăm trang, có thể trải qua nhiều trang.
+# Tạo virtual environment (khuyến nghị)
+python3 -m venv venv
+source venv/bin/activate  # Linux/Mac
+# hoặc venv\Scripts\activate  # Windows
 
-Merge cells ngang/dọc, tiêu đề lồng nhau.
+# Cài đặt dependencies
+pip install -r requirements.txt
+```
 
-Nội dung pha trộn đa ngôn ngữ, ký hiệu toán học và thuật ngữ chuyên ngành.
+### Bước 2: Chuẩn bị dữ liệu
 
-Yêu cầu chi tiết:
+1. **Đặt các file dữ liệu vào thư mục `main/data/`**:
+   - `public-test-input.zip` → cho public test
+   - `private-test-input.zip` → cho private test  
+   - `training_input.zip` → cho training data
 
-Mô hình trích xuất làm việc với tệp dữ liệu đầu vào định dạng .pdf.
+2. **Chạy script chuẩn bị dữ liệu**:
+```bash
+bash prepare_data.sh
+```
 
-Kết quả trích xuất được lưu dưới dạng tệp .md. Yêu cầu định dạng cụ thể như sau:
+### Bước 3: Khởi động services
 
-Các bảng được chuyển đổi sang HTML table trong Markdown.
+**Khởi động Qdrant vector database và Ollama**:
+```bash
+docker-compose up -d
+```
 
-Hình ảnh và công thức được thay thế bằng placeholder: |<image_n>|, |<formula_n>| theo thứ tự xuất hiện. Các hình ảnh và công thức sẽ được lưu cùng tệp .md.
+Kiểm tra services đang chạy:
+```bash
+docker-compose ps
+```
 
-Các thành phần khác (heading, bullet list, code block) phải giữ nguyên định dạng Markdown.
+### Bước 4: Chạy pipeline
 
-Nhiệm vụ 2: Truy vấn dữ liệu
+#### 🎯 Chế độ Public Test
+```bash
+# Trích xuất PDF từ public test data
+python3 main/src/main.py --mode public --task extract
 
-Trả lời các câu hỏi trắc nghiệm với 4 lựa chọn A, B, C, D, trong đó mỗi câu có thể có nhiều đáp án đúng. Thí sinh phải dùng dữ liệu trích xuất được từ nhiệm vụ 1 để trả lời cho các câu hỏi trắc nghiệm đưa ra.
+# Trả lời câu hỏi
+python3 main/src/main.py --mode public --task qa
+```
 
-Yêu cầu chi tiết:
+#### 🔒 Chế độ Private Test  
+```bash
+# Trích xuất PDF từ private test data
+python3 main/src/main.py --mode private --task extract
 
-Các câu hỏi được lưu trong tệp question.csv chứa các câu hỏi. Mỗi câu đi kèm 4 lựa chọn A, B, C, D.
+# Trả lời câu hỏi
+python3 main/src/main.py --mode private --task qa
+```
 
-Mỗi câu hỏi cần bóc ra số lượng câu hỏi trả lời đúng và danh sách các câu trả lời.
+#### 📚 Chế độ Training
+```bash
+# Trích xuất PDF từ training data
+python3 main/src/main.py --mode training --task extract
 
-Cấu trúc dữ liệu:
+# Trả lời câu hỏi
+python3 main/src/main.py --mode training --task qa
+```
 
-Training Data
+### Bước 5: Sử dụng Scripts tự động
 
-Input: Một tệp training_input.zip gồm các tệp PDF cần trích xuất dữ liệu và một tệp question.csv. Tệp question.csv có định dạng như sau:
+**Sử dụng scripts có sẵn**:
+```bash
+# Trích xuất PDF (mặc định: private mode)
+bash run_extract.sh
 
-Cột đầu tiên là câu hỏi.
+# Trả lời câu hỏi (mặc định: private mode)  
+bash run_choose_answer.sh
+```
 
-Bốn cột tiếp theo tương ứng với bốn đáp án A, B, C, D.
+**Chỉnh sửa mode trong scripts**:
+- Mở `run_extract.sh` và `run_choose_answer.sh`
+- Thay đổi `--mode private` thành `--mode public` hoặc `--mode training`
 
-Output: Một tệp training_output.zip gồm một tệp answer.md và một tập các thư mục con.
+## 📊 Kết quả
 
-Tên thư mục con là tên của tệp PDF cần trích xuất. Trong mỗi thư mục con sẽ có:
+Sau khi chạy xong, kết quả sẽ được lưu trong:
+- `output/public_test_output/` - Kết quả public test
+- `output/private_test_output/` - Kết quả private test  
+- `output/training_test_output/` - Kết quả training
 
-Tệp main.md chứa nội dung trích xuất.
+Mỗi thư mục chứa:
+- `images/` - Hình ảnh trích xuất từ PDF
+- `main.md` - Nội dung markdown đã xử lý
+- Các file khác theo cấu trúc của từng PDF
 
-Thư mục con images chứa ảnh và công thức được trích xuất.
+## 🔧 Troubleshooting
 
-Tệp answer.md là kết quả tổng hợp của cả 2 nhiệm vụ. Nội dung tệp gồm hai phần:
+### Lỗi thường gặp:
 
-Phần trích xuất: bắt đầu từ ### TASK EXTRACT, tiếp theo là # tên_tệp_pdf và nội dung được trích xuất (trùng với nội dung trong tệp main.md).
+1. **Lỗi "Module not found"**:
+```bash
+# Đảm bảo đang ở thư mục gốc của project
+cd /path/to/CN-DoubleQ
+python3 main/src/main.py --mode public --task extract
+```
 
-Phần QA: bắt đầu từ ### TASK QA, sau đó là thông tin gồm số lượng câu đúng và danh sách các đáp án đúng. Thứ tự các câu trả lời trắc nghiệm từ trên xuống được giữ nguyên như thứ tự các câu hỏi trắc nghiệm trong tệp training_question.csv.
+2. **Lỗi "Connection refused" với Qdrant**:
+```bash
+# Kiểm tra Docker services
+docker-compose ps
+docker-compose logs qdrant
 
-Public Test Data: Thí sinh sẽ được cung cấp tệp public_test_input.zip có cấu trúc như tệp training_input.zip. Thí sinh phải nộp tệp public_test_output.zip có cấu trúc như tệp training_output.zip.
+# Restart services nếu cần
+docker-compose restart
+```
 
-Private Test Data: Thí sinh sẽ được cung cấp tệp private_test_input.zip có cấu trúc như tệp training_input.zip. Thí sinh phải nộp tệp private_test_output.zip có cấu trúc như tệp training_output.zip.
+3. **Lỗi "File not found" cho question.csv**:
+```bash
+# Chạy lại script chuẩn bị dữ liệu
+bash prepare_data.sh
+```
 
-Chú ý: Thí sinh xem định dạng mẫu từ tập training.
+4. **Lỗi memory/GPU**:
+```bash
+# Giảm batch size trong code hoặc tăng RAM
+# Kiểm tra GPU memory nếu sử dụng CUDA
+```
 
-Nộp bài: Ngoài tệp answer.md và các thư mục con trích xuất từ các PDF, thí sinh cần nộp tệp main.py được đặt trong cùng file nén public_test_output.zip và private_test_output.zip. Tệp main.py chứa tất cả source code trong project của thí sinh. Chú ý: Tệp main.py này không yêu cầu phải chạy được, mà giúp ban giám khảo kiểm tra trước tính trung thực của nhóm.
+### Kiểm tra logs:
+```bash
+# Xem logs của Docker services
+docker-compose logs -f
 
-Yêu cầu kỹ thuật
+# Xem logs của Python script
+python3 main/src/main.py --mode public --task extract 2>&1 | tee logs.txt
+```
 
-Bắt buộc sử dụng các mô hình mã nguồn mở với số lượng tham số dưới 4B cho mỗi nhiệm vụ.
+## 🛠️ Cấu hình nâng cao
 
-Thí sinh được phép áp dụng các phương pháp data augmentation.
+### Thay đổi model embedding:
+Chỉnh sửa trong `main/src/embedding/model.py`
 
-Sau mỗi giai đoạn, yêu cầu mỗi đội cung cấp đường dẫn (link) chứa toàn bộ mã nguồn, tệp requirement, checkpoint và hướng dẫn huấn luyện để tiến hành hậu kiểm và đánh giá mô hình. Thí sinh cần nộp đường dẫn GitHub (ở chế độ chỉ chia sẻ cho BTC). Hệ thống nộp phải là một pipeline thống nhất:
+### Thay đổi LLM model:
+Chỉnh sửa trong `main/src/llm/llm_integrations.py`
 
-Khi chạy tệp run_extract.sh, hệ thống phải tự động chuyển đổi dữ liệu đầu vào dạng PDF thành tập dữ liệu Markdown giống với kết quả nộp. Dữ liệu cần được xử lý và lập chỉ mục (index) hoàn toàn trên môi trường cục bộ (RAM hoặc file local), không được sử dụng cơ sở dữ liệu bên ngoài.
+### Tùy chỉnh vector database:
+Chỉnh sửa trong `main/src/vectordb/qdrant.py`
 
-Khi chạy tệp run_choose_answer.sh, hệ thống phải tự động duyệt qua các câu hỏi do BTC cung cấp và xuất ra tệp kết quả tương tự kết quả nộp.
+## 📝 Ghi chú
 
-(base) quyen@Lenovo:~/Documents/CN-DoubleQ$ tree -L 5
-.
-├── docker-compose.yaml
-├── LICENSE
-├── main
-│   ├── data
-│   │   ├── data_description.txt
-│   │   ├── public_test_input
-│   │   │   └── public-test-input
-│   │   │       ├── Public061.pdf
-│   │   │       ├── Public062.pdf
-│   │   │       ├── Public063.pdf
-│   │   │       ├── Public064.pdf
-│   │   │       ├── Public065.pdf
-│   │   │       ├── Public066.pdf
-│   │   │       ├── Public067.pdf
-│   │   │       ├── Public068.pdf
-│   │   │       ├── Public069.pdf
-│   │   │       ├── Public070.pdf
-│   │   │       ├── Public071.pdf
-│   │   │       ├── Public072.pdf
-│   │   │       ├── Public073.pdf
-│   │   │       ├── Public074.pdf
-│   │   │       ├── Public075.pdf
-│   │   │       ├── Public076.pdf
-│   │   │       ├── Public077.pdf
-│   │   │       ├── Public078.pdf
-│   │   │       ├── Public079.pdf
-│   │   │       ├── Public080.pdf
-│   │   │       └── question.csv
-│   │   ├── public-test-input.zip
-│   │   ├── training_input.zip
-│   │   ├── training_out.zip
-│   │   └── training_test_input
-│   │       └── training_input
-│   │           ├── Public001.pdf
-│   │           ├── Public002.pdf
-│   │           ├── Public003.pdf
-│   │           ├── Public004.pdf
-│   │           ├── Public005.pdf
-│   │           ├── Public006.pdf
-│   │           ├── Public007.pdf
-│   │           ├── Public008.pdf
-│   │           ├── Public009.pdf
-│   │           ├── Public010.pdf
-│   │           ├── Public011.pdf
-│   │           ├── Public012.pdf
-│   │           ├── Public013.pdf
-│   │           ├── Public014.pdf
-│   │           ├── Public015.pdf
-│   │           ├── Public016.pdf
-│   │           ├── Public017.pdf
-│   │           ├── Public018.pdf
-│   │           ├── Public019.pdf
-│   │           ├── Public020.pdf
-│   │           ├── Public021.pdf
-│   │           ├── Public022.pdf
-│   │           ├── Public023.pdf
-│   │           ├── Public024.pdf
-│   │           ├── Public025.pdf
-│   │           ├── Public026.pdf
-│   │           ├── Public027.pdf
-│   │           ├── Public028.pdf
-│   │           ├── Public029.pdf
-│   │           ├── Public030.pdf
-│   │           ├── Public031.pdf
-│   │           ├── Public032.pdf
-│   │           ├── Public033.pdf
-│   │           ├── Public034.pdf
-│   │           ├── Public035.pdf
-│   │           ├── Public036.pdf
-│   │           ├── Public037.pdf
-│   │           ├── Public038.pdf
-│   │           ├── Public039.pdf
-│   │           ├── Public040.pdf
-│   │           ├── Public041.pdf
-│   │           ├── Public042.pdf
-│   │           ├── Public043.pdf
-│   │           ├── Public044.pdf
-│   │           ├── Public045.pdf
-│   │           ├── Public046.pdf
-│   │           ├── Public047.pdf
-│   │           ├── Public048.pdf
-│   │           ├── Public049.pdf
-│   │           ├── Public050.pdf
-│   │           ├── Public051.pdf
-│   │           ├── Public052.pdf
-│   │           ├── Public053.pdf
-│   │           ├── Public054.pdf
-│   │           ├── Public055.pdf
-│   │           ├── Public056.pdf
-│   │           ├── Public057.pdf
-│   │           ├── Public058.pdf
-│   │           ├── Public059.pdf
-│   │           ├── Public060.pdf
-│   │           └── question.csv
-│   ├── extract_pdf.py
-│   ├── __init__.py
-│   ├── output
-│   │   └── public_test_output
-│   │       ├── Public061
-│   │       │   ├── images
-│   │       │   └── main.md
-│   │       ├── Public062
-│   │       │   ├── images
-│   │       │   └── main.md
-│   │       ├── Public063
-│   │       │   ├── images
-│   │       │   └── main.md
-│   │       ├── Public064
-│   │       │   ├── images
-│   │       │   └── main.md
-│   │       ├── Public065
-│   │       │   ├── images
-│   │       │   └── main.md
-│   │       ├── Public066
-│   │       │   ├── images
-│   │       │   └── main.md
-│   │       ├── Public067
-│   │       │   ├── images
-│   │       │   └── main.md
-│   │       ├── Public068
-│   │       │   ├── images
-│   │       │   └── main.md
-│   │       ├── Public069
-│   │       │   ├── images
-│   │       │   └── main.md
-│   │       ├── Public070
-│   │       │   ├── images
-│   │       │   └── main.md
-│   │       ├── Public071
-│   │       │   ├── images
-│   │       │   └── main.md
-│   │       ├── Public072
-│   │       │   ├── images
-│   │       │   └── main.md
-│   │       ├── Public073
-│   │       │   ├── images
-│   │       │   └── main.md
-│   │       ├── Public074
-│   │       │   ├── images
-│   │       │   └── main.md
-│   │       ├── Public075
-│   │       │   ├── images
-│   │       │   └── main.md
-│   │       ├── Public076
-│   │       │   ├── images
-│   │       │   └── main.md
-│   │       ├── Public077
-│   │       │   ├── images
-│   │       │   └── main.md
-│   │       ├── Public078
-│   │       │   ├── images
-│   │       │   └── main.md
-│   │       ├── Public079
-│   │       │   ├── images
-│   │       │   └── main.md
-│   │       └── Public080
-│   │           ├── images
-│   │           └── main.md
-│   ├── __pycache__
-│   │   └── __init__.cpython-310.pyc
-│   └── src
-│       ├── answer_generator.py
-│       ├── embedding
-│       │   ├── __init__.py
-│       │   ├── model.py
-│       │   ├── models
-│       │   │   └── models--intfloat--multilingual-e5-base
-│       │   └── __pycache__
-│       │       ├── __init__.cpython-310.pyc
-│       │       └── model.cpython-310.pyc
-│       ├── embedding_models
-│       │   ├── models--intfloat--multilingual-e5-base
-│       │   │   ├── blobs
-│       │   │   ├── refs
-│       │   │   └── snapshots
-│       │   └── models--vinai--phobert-base-v2
-│       │       ├── blobs
-│       │       ├── refs
-│       │       └── snapshots
-│       ├── __init__.py
-│       ├── llm
-│       │   ├── chat.py
-│       │   ├── __init__.py
-│       │   ├── llm_integrations.py
-│       │   ├── prompts
-│       │   │   └── prompt.txt
-│       │   ├── __pycache__
-│       │   │   ├── chat.cpython-310.pyc
-│       │   │   ├── chat.cpython-313.pyc
-│       │   │   ├── __init__.cpython-310.pyc
-│       │   │   ├── __init__.cpython-313.pyc
-│       │   │   ├── llm_integrations.cpython-310.pyc
-│       │   │   ├── llm_integrations.cpython-313.pyc
-│       │   │   └── _utils.cpython-310.pyc
-│       │   └── _utils.py
-│       ├── main.py
-│       ├── output
-│       ├── __pycache__
-│       │   ├── __init__.cpython-310.pyc
-│       │   ├── __init__.cpython-313.pyc
-│       │   ├── main.cpython-310.pyc
-│       │   └── main.cpython-313.pyc
-│       ├── utils
-│       │   ├── chunking.py
-│       │   ├── collections.py
-│       │   ├── indexer.py
-│       │   ├── __init__.py
-│       │   ├── __pycache__
-│       │   │   ├── collections.cpython-310.pyc
-│       │   │   ├── indexer.cpython-310.pyc
-│       │   │   ├── __init__.cpython-310.pyc
-│       │   │   └── _utils.cpython-310.pyc
-│       │   └── _utils.py
-│       └── vectordb
-│           ├── __init__.py
-│           ├── __pycache__
-│           │   ├── __init__.cpython-310.pyc
-│           │   └── qdrant.cpython-310.pyc
-│           └── qdrant.py
-├── output
-│   ├── answer.md
-│   └── public_test_output
-│       ├── answer.md
-│       ├── main.py
-│       ├── Public061
-│       │   ├── images
-│       │   └── main.md
-│       ├── Public062
-│       │   ├── images
-│       │   └── main.md
-│       ├── Public063
-│       │   ├── images
-│       │   └── main.md
-│       ├── Public064
-│       │   ├── images
-│       │   └── main.md
-│       ├── Public065
-│       │   ├── images
-│       │   └── main.md
-│       ├── Public066
-│       │   ├── images
-│       │   └── main.md
-│       ├── Public067
-│       │   ├── images
-│       │   └── main.md
-│       ├── Public068
-│       │   ├── images
-│       │   └── main.md
-│       ├── Public069
-│       │   ├── images
-│       │   └── main.md
-│       ├── Public070
-│       │   ├── images
-│       │   └── main.md
-│       ├── Public071
-│       │   ├── images
-│       │   └── main.md
-│       ├── Public072
-│       │   ├── images
-│       │   └── main.md
-│       ├── Public073
-│       │   ├── images
-│       │   └── main.md
-│       ├── Public074
-│       │   ├── images
-│       │   └── main.md
-│       ├── Public075
-│       │   ├── images
-│       │   └── main.md
-│       ├── Public076
-│       │   ├── images
-│       │   └── main.md
-│       ├── Public077
-│       │   ├── images
-│       │   └── main.md
-│       ├── Public078
-│       │   ├── images
-│       │   └── main.md
-│       ├── Public079
-│       │   ├── images
-│       │   └── main.md
-│       └── Public080
-│           ├── images
-│           └── main.md
-├── prepare_data.sh
-├── README.md
-├── requirements.txt
-├── run_choose_answer.sh
-├── run_extract.sh
-└── savefile
-    ├── extract_pdf.py
-    └── main.py
-
-116 directories, 177 files
-(base) quyen@Lenovo:~/Documents/CN-DoubleQ$ 
+- **RAM**: Dự án yêu cầu ít nhất 8GB RAM, khuyến nghị 16GB+
+- **Disk**: Cần ít nhất 10GB free space cho models và data
+- **GPU**: Không bắt buộc nhưng sẽ tăng tốc độ xử lý
+- **Internet**: Cần kết nối internet để download models lần đầu
