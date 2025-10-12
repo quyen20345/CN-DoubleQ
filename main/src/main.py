@@ -117,16 +117,31 @@ def run_task_qa(paths: dict):
     # Đọc lại dữ liệu đã trích xuất từ các file main.md
     extracted_data = {}
     output_dir_path = Path(paths["output_dir"])
+    
+    print(f"🔍 Tìm kiếm dữ liệu trong: {output_dir_path}")
+    
     for subdir in output_dir_path.iterdir():
         if subdir.is_dir():
+            # Tìm main.md trong thư mục gốc trước
             main_md = subdir / "main.md"
             if main_md.exists():
+                print(f"✅ Tìm thấy: {subdir.name}/main.md")
                 extracted_data[subdir.name] = main_md.read_text(encoding='utf-8')
+            else:
+                # Tìm main.md trong thư mục images (fallback)
+                images_md = subdir / "images" / "main.md"
+                if images_md.exists():
+                    print(f"✅ Tìm thấy: {subdir.name}/images/main.md")
+                    extracted_data[subdir.name] = images_md.read_text(encoding='utf-8')
+                else:
+                    print(f"⚠️ Không tìm thấy main.md trong {subdir.name}")
 
     if not extracted_data:
         print(f"❌ Lỗi: Không tìm thấy dữ liệu đã trích xuất trong '{output_dir_path}'.")
         print("Vui lòng chạy tác vụ 'extract' trước.")
         return
+
+    print(f"📊 Đã tìm thấy {len(extracted_data)} file dữ liệu")
 
     # Trả lời câu hỏi
     qa_results = qa_handler.process_questions_csv(paths["question_csv"])

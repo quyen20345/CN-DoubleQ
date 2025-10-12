@@ -15,10 +15,10 @@ class PDFToMarkdownConverter:
         
         # Pattern để phát hiện chú thích ảnh
         self.figure_caption_patterns = [
-            r'^Hình\s+\d+[\.:]\s*(.+)$',  # "Hình 1: Mô tả" hoặc "Hình 1. Mô tả"
-            r'^Figure\s+\d+[\.:]\s*(.+)$',  # "Figure 1: Description"
-            r'^Fig\.\s*\d+[\.:]\s*(.+)$',   # "Fig. 1: Description"
-            r'^Hình\s+\d+\.\d+[\.:]\s*(.+)$',  # "Hình 1.1: Mô tả"
+            r'^Hình\s+\d+[\.:]\s*(.+)$',
+            r'^Figure\s+\d+[\.:]\s*(.+)$',
+            r'^Fig\.\s*\d+[\.:]\s*(.+)$',
+            r'^Hình\s+\d+\.\d+[\.:]\s*(.+)$',
         ]
         
         # Counter cho ảnh global
@@ -77,24 +77,50 @@ class PDFToMarkdownConverter:
         if match:
             number = match.group(1)
             title = match.group(2).strip()
-            is_short = len(title) < 150
-            no_trailing_punctuation = not title.endswith(('.', ',', ';'))
             
-            if is_short or no_trailing_punctuation:
-                level = len(number.split('.'))
-                return level, title, True
+            # Phải có title, không chỉ là số
+            if title:
+                is_short = len(title) < 150
+                no_trailing_punctuation = not title.endswith(('.', ',', ';'))
+                
+                if is_short or no_trailing_punctuation:
+                    level = len(number.split('.'))
+                    return level, title, True
         
         # Pattern 2: "1. Nội dung chính"
         match2 = re.match(self.heading_with_dot, text)
         if match2:
             title = match2.group(2).strip()
-            is_short = len(title) < 150
-            no_trailing_punctuation = not title.endswith(('.', ',', ';'))
             
-            if is_short or no_trailing_punctuation:
-                return 1, title, True
+            # Phải có title, không chỉ là số đơn lẻ
+            if title:
+                is_short = len(title) < 150
+                no_trailing_punctuation = not title.endswith(('.', ',', ';'))
+                
+                if is_short or no_trailing_punctuation:
+                    return 1, title, True
         
         return 0, text, False
+    
+    def is_standalone_number(self, text: str) -> Tuple[bool, str]:
+        """
+        Kiểm tra xem text có phải chỉ là số heading đơn lẻ không
+        Ví dụ: "1.", "1.1.1", "2.3", "**1.**"
+        Returns: (is_number, cleaned_number)
+        """
+        text = text.strip()
+        # Loại bỏ bold markdown
+        text = re.sub(r'^\*\*(.+)\*\*$', r'\1', text).strip()
+        
+        # Pattern: chỉ là số với dấu chấm (có thể có hoặc không)
+        # "1", "1.", "1.1", "1.1.1", "1.1.1."
+        number_pattern = r'^(\d+(?:\.\d+)*)\.?$'
+        match = re.match(number_pattern, text)
+        
+        if match:
+            return True, match.group(1)
+        
+        return False, text
 
     def detect_bold_only_heading(self, text: str, spans: List[Dict], next_line_text: str = "") -> Tuple[bool, str]:
         """Phát hiện heading chỉ có bold (không có số)"""
@@ -355,7 +381,7 @@ class PDFToMarkdownConverter:
                     paragraph_is_italic = False
                 
                 # Thêm ảnh
-                markdown_lines.append(f"![image]({elem['filename']})")
+                markdown_lines.append(f"![image](images/{elem['filename']})")
                 markdown_lines.append("")
                 
                 i += 1
@@ -390,14 +416,53 @@ class PDFToMarkdownConverter:
                 # Process text blocks
                 all_lines = self.process_text_blocks_to_lines(text_blocks)
                 
-                for j, line_info in enumerate(all_lines):
+                j = 0
+                while j < len(all_lines):
+                    line_info = all_lines[j]
                     full_line = line_info['text']
                     spans = line_info['spans']
                     
                     if not full_line:
+                        j += 1
                         continue
                     
-                    # Kiểm tra heading có số
+                    # BƯỚC 1: Kiểm tra số đơn lẻ (có thể là heading bị tách)
+                    is_number, number = self.is_standalone_number(full_line)
+                    
+                    if is_number:
+                        # Kiểm tra line tiếp theo có phải là phần title không
+                        if j + 1 < len(all_lines):
+                            next_line = all_lines[j + 1]['text'].strip()
+                            next_spans = all_lines[j + 1]['spans']
+                            
+                            # Kiểm tra next_line không phải là số, không quá dài
+                            is_next_number, _ = self.is_standalone_number(next_line)
+                            
+                            if not is_next_number and len(next_line) < 150:
+                                # Gộp thành heading
+                                if current_paragraph:
+                                    para_text = ' '.join(current_paragraph)
+                                    if paragraph_is_italic:
+                                        markdown_lines.append(f"_{para_text}_")
+                                    else:
+                                        markdown_lines.append(para_text)
+                                    markdown_lines.append("")
+                                    current_paragraph = []
+                                    paragraph_is_italic = False
+                                
+                                level = len(number.split('.'))
+                                markdown_lines.append(f"{'#' * level} {next_line}")
+                                markdown_lines.append("")
+                                
+                                # Skip cả 2 lines
+                                j += 2
+                                continue
+                        
+                        # Nếu không có line tiếp theo hoặc không match -> SKIP số đơn lẻ
+                        j += 1
+                        continue
+                    
+                    # BƯỚC 2: Kiểm tra heading có số đầy đủ
                     level, heading_text, is_numbered_heading = self.detect_heading_level(full_line, spans)
                     
                     if is_numbered_heading:
@@ -413,9 +478,10 @@ class PDFToMarkdownConverter:
                         
                         markdown_lines.append(f"{'#' * level} {heading_text}")
                         markdown_lines.append("")
+                        j += 1
                         continue
                     
-                    # Kiểm tra bold heading
+                    # BƯỚC 3: Kiểm tra bold heading
                     next_line_text = all_lines[j+1]['text'] if j+1 < len(all_lines) else ""
                     is_bold_heading, bold_heading_text = self.detect_bold_only_heading(
                         full_line, spans, next_line_text
@@ -434,9 +500,10 @@ class PDFToMarkdownConverter:
                         
                         markdown_lines.append(f"### {bold_heading_text}")
                         markdown_lines.append("")
+                        j += 1
                         continue
                     
-                    # Kiểm tra chú thích ảnh
+                    # BƯỚC 4: Kiểm tra chú thích ảnh
                     if self.is_figure_caption(full_line):
                         if current_paragraph:
                             para_text = ' '.join(current_paragraph)
@@ -451,9 +518,10 @@ class PDFToMarkdownConverter:
                         # Thêm caption với italic
                         markdown_lines.append(f"*{full_line}*")
                         markdown_lines.append("")
+                        j += 1
                         continue
                     
-                    # Xử lý paragraph bình thường
+                    # BƯỚC 5: Xử lý paragraph bình thường
                     is_para_italic = self.is_paragraph_italic(spans)
                     
                     line_text = ""
@@ -487,6 +555,8 @@ class PDFToMarkdownConverter:
                                 current_paragraph = []
                             paragraph_is_italic = False
                             current_paragraph.append(line_text.strip())
+                    
+                    j += 1
             
             else:
                 i += 1
@@ -507,7 +577,7 @@ class PDFToMarkdownConverter:
         Main conversion function
         Output structure:
         output_dir/
-          ├── main.md
+          ├── main.md  # <-- File này phải ở đây
           └── images/
               ├── image1.png
               ├── image2.jpg
@@ -518,7 +588,7 @@ class PDFToMarkdownConverter:
         
         # Nếu output_dir là "images/", ta lưu main.md ở thư mục cha
         if output_dir.name == "images":
-            output_file = output_dir.parent / "main.md"
+            output_file = output_dir.parent / "main.md"  # <-- Sửa ở đây
         else:
             output_file = output_dir / "main.md"
         
@@ -526,7 +596,7 @@ class PDFToMarkdownConverter:
         output_dir.mkdir(parents=True, exist_ok=True)
         images_dir = output_dir / "images"
         images_dir.mkdir(exist_ok=True)
-        
+            
         # Reset global image counter
         self.global_image_counter = 0
         
@@ -555,6 +625,8 @@ class PDFToMarkdownConverter:
         final_markdown = "\n".join(all_markdown_lines)
         final_markdown = self._cleanup_markdown(final_markdown)
         
+        output_file = output_dir / "main.md"
+        # Lưu file main.md
         with open(output_file, 'w', encoding='utf-8') as f:
             f.write(final_markdown)
         
@@ -562,9 +634,7 @@ class PDFToMarkdownConverter:
         print(f"   Images saved to: {images_dir}")
         print(f"   Total images: {self.global_image_counter}")
         
-        # ⚙️ Trả về đường dẫn để main.py đọc
         return output_file
-    
 
     def _cleanup_markdown(self, text: str) -> str:
         """Clean up markdown"""
@@ -606,5 +676,3 @@ if __name__ == "__main__":
             print(f"❌ Error processing {pdf_file.name}: {e}")
             import traceback
             traceback.print_exc()
-
-
