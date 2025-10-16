@@ -33,30 +33,6 @@ pip install -r requirements.txt
 docker-compose up -d
 ```
 
-## 📁 Cấu trúc thư mục
-
-```
-CN-DoubleQ/
-├── main/                          # Thư mục chính chứa source code
-│   ├── src/                       # Source code chính
-│   │   ├── embedding/             # Embedding models
-│   │   ├── llm/                   # LLM integration
-│   │   ├── utils/                 # Utilities
-│   │   ├── vectordb/              # Vector database
-│   │   └── main.py                # Entry point
-│   ├── data/                      # Dữ liệu input
-│   │   ├── public_test_input/     # Public test data
-│   │   ├── private_test_input/    # Private test data
-│   │   └── training_test_input/   # Training data
-│   └── extract_pdf.py             # PDF extraction module
-├── output/                        # Kết quả output
-├── docker-compose.yaml            # Docker configuration
-├── requirements.txt               # Python dependencies
-├── run_extract.sh                # Script trích xuất PDF
-├── run_choose_answer.sh          # Script trả lời câu hỏi
-└── prepare_data.sh               # Script chuẩn bị dữ liệu
-```
-
 ## 🚀 Hướng dẫn chạy dự án
 
 ### Bước 1: Chuẩn bị môi trường
