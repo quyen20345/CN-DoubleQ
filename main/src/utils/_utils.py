@@ -33,10 +33,3 @@ def get_files_in_directory(path):
             files.extend(get_files_in_directory(path_f))
 
     return files
-
-# def chunking(text):
-#     text_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
-#                 chunk_size=512, chunk_overlap=126
-#             )
-#     chunks = text_splitter.split_text(text)
-#     return [chunk for chunk in chunks if len(chunk) >= 40]
