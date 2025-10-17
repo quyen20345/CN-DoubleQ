@@ -46,3 +46,8 @@
 
 ### đang embedding với model nào?
 - có nên thay thế ko?
+
+## note2
+1. dùng llm tạo một markdown.md có cấu trúc tương tự bộ pdf phức tạp tổ chức cho.
+2. tạo code chunking dựa vào mardown trên 
+3. chunking hiện tại là đang dựa vào bộ answer.md hay là chunk từng file?

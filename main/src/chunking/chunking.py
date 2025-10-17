@@ -1,230 +1,152 @@
+# main/src/chunking/chunking.py
 # -*- coding: utf-8 -*-
 import re
 from typing import List, Tuple
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 
-def chunking(text: str, chunk_size: int = 512, chunk_overlap: int = 100) -> List[str]:
+def chunking(text: str, chunk_size: int = 600, chunk_overlap: int = 150) -> List[str]:
     """
-    Intelligent chunking với semantic preservation.
+    Hàm chunking thông minh, ưu tiên giữ lại cấu trúc và ngữ nghĩa của tài liệu kỹ thuật.
     """
     if not isinstance(text, str) or not text.strip():
         return []
-    
+
+    # Bước 1: Tách văn bản thành các khối cấu trúc (tiêu đề, bảng, danh sách, văn bản thường)
+    # Pattern để tìm các khối markdown.
+    # Nâng cấp pattern để bắt cả khối mã và xử lý tiêu đề tốt hơn.
+    pattern = re.compile(
+        r'(^#{1,6}\s.*$)|'          # 1: Headings
+        r'(\|.*\|(?:\n\|.*\|)+)|'   # 2: Tables
+        r'((?:^\s*[-*•]\s.*(?:\n|$))+)|'  # 3: Lists
+        r'(```[\s\S]*?```)',        # 4: Code blocks
+        re.MULTILINE
+    )
+
     chunks = []
-    
-    # Bước 1: Tách theo structure (headings, tables, lists)
-    sections = _split_by_structure(text)
-    
-    # Bước 2: Chunk từng section
-    for section_type, section_content in sections:
-        if section_type == 'table':
-            # Bảng được giữ nguyên hoặc split theo rows
-            table_chunks = _chunk_table(section_content, chunk_size)
-            chunks.extend(table_chunks)
-        elif section_type == 'list':
-            # List được chunk thông minh
-            list_chunks = _chunk_list(section_content, chunk_size, chunk_overlap)
-            chunks.extend(list_chunks)
-        else:
-            # Text thường
-            text_chunks = _chunk_text(section_content, chunk_size, chunk_overlap)
-            chunks.extend(text_chunks)
-    
-    # Bước 3: Post-processing
-    cleaned_chunks = _post_process_chunks(chunks)
-    
-    return cleaned_chunks
+    last_end = 0
 
-
-def _split_by_structure(text: str) -> List[Tuple[str, str]]:
-    """
-    Tách text theo cấu trúc: heading, table, list, text.
-    Returns: List of (type, content) tuples
-    """
-    sections = []
-    
-    # Pattern để nhận diện các structures
-    patterns = {
-        'heading': r'^#{1,6}\s+.+$',
-        'table': r'\|.+\|[\s\S]*?\n(?:\|[\s\S]*?\n)+',
-        'list': r'(?:^\s*[-*•]\s+.+$\n?)+',
-    }
-    
-    current_pos = 0
-    structure_matches = []
-    
-    # Tìm tất cả structures
-    for struct_type, pattern in patterns.items():
-        for match in re.finditer(pattern, text, re.MULTILINE):
-            structure_matches.append((match.start(), match.end(), struct_type, match.group()))
-    
-    # Sort theo position
-    structure_matches.sort(key=lambda x: x[0])
-    
-    # Extract sections
-    for start, end, struct_type, content in structure_matches:
-        # Add text trước structure (nếu có)
-        if current_pos < start:
-            text_before = text[current_pos:start].strip()
-            if text_before:
-                sections.append(('text', text_before))
+    for match in pattern.finditer(text):
+        start, end = match.span()
         
-        # Add structure
-        sections.append((struct_type, content))
-        current_pos = end
-    
-    # Add text cuối cùng
-    if current_pos < len(text):
-        remaining = text[current_pos:].strip()
-        if remaining:
-            sections.append(('text', remaining))
-    
-    # Nếu không có structure nào, coi toàn bộ là text
-    if not sections:
-        sections.append(('text', text))
-    
-    return sections
-
-
-def _chunk_table(table_text: str, max_size: int) -> List[str]:
-    """
-    Chunk bảng thông minh: giữ header, split rows nếu cần.
-    """
-    lines = table_text.strip().split('\n')
-    
-    if len(lines) <= 2:  # Chỉ có header
-        return [table_text]
-    
-    # Header (2 dòng đầu: tiêu đề + separator)
-    header = '\n'.join(lines[:2])
-    rows = lines[2:]
-    
-    # Nếu bảng nhỏ, giữ nguyên
-    if len(table_text) <= max_size * 1.5:
-        return [table_text]
-    
-    # Split thành nhiều sub-tables
-    chunks = []
-    current_chunk = header + "\n"
-    
-    for row in rows:
-        if len(current_chunk) + len(row) + 1 > max_size:
-            chunks.append(current_chunk.strip())
-            current_chunk = header + "\n" + row + "\n"
+        # Lấy phần văn bản thường nằm giữa hai khối cấu trúc
+        plain_text_part = text[last_end:start].strip()
+        if plain_text_part:
+            text_chunks = _chunk_plain_text(plain_text_part, chunk_size, chunk_overlap)
+            chunks.extend(text_chunks)
+            
+        # Lấy khối cấu trúc (bảng, danh sách, mã)
+        structured_block = match.group().strip()
+        
+        # Nếu khối cấu trúc quá lớn, vẫn chia nhỏ nó một cách thông minh
+        if len(structured_block) > chunk_size * 1.5:
+            if structured_block.startswith('|'): # Là bảng
+                 chunks.extend(_chunk_table(structured_block, chunk_size))
+            elif structured_block.startswith(('`', '*', '-', '•')): # Là code hoặc list
+                 chunks.extend(_chunk_plain_text(structured_block, chunk_size, chunk_overlap))
+            else: # Là tiêu đề dài hoặc trường hợp khác
+                 chunks.append(structured_block)
         else:
-            current_chunk += row + "\n"
+            chunks.append(structured_block)
+            
+        last_end = end
     
-    if current_chunk.strip() != header:
-        chunks.append(current_chunk.strip())
-    
-    return chunks
+    # Xử lý phần văn bản cuối cùng
+    remaining_text = text[last_end:].strip()
+    if remaining_text:
+        text_chunks = _chunk_plain_text(remaining_text, chunk_size, chunk_overlap)
+        chunks.extend(text_chunks)
+
+    # Bước 3: Xử lý hậu kỳ
+    return _post_process_chunks(chunks)
 
 
-def _chunk_list(list_text: str, chunk_size: int, overlap: int) -> List[str]:
-    """
-    Chunk list items, giữ nguyên cấu trúc list.
-    """
-    # Tách thành các items
-    items = re.findall(r'^\s*[-*•]\s+.+$', list_text, re.MULTILINE)
+def _chunk_plain_text(text: str, chunk_size: int, chunk_overlap: int) -> List[str]:
+    """Sử dụng RecursiveCharacterTextSplitter để chia nhỏ văn bản thường."""
+    if not text:
+        return []
     
-    if not items:
-        return [list_text]
-    
-    chunks = []
-    current_chunk = ""
-    
-    for item in items:
-        if len(current_chunk) + len(item) > chunk_size:
-            if current_chunk:
-                chunks.append(current_chunk.strip())
-            current_chunk = item + "\n"
-        else:
-            current_chunk += item + "\n"
-    
-    if current_chunk.strip():
-        chunks.append(current_chunk.strip())
-    
-    return chunks
-
-
-def _chunk_text(text: str, chunk_size: int, overlap: int) -> List[str]:
-    """
-    Chunk text thường với semantic boundaries.
-    """
-    # Sử dụng RecursiveCharacterTextSplitter với separators tối ưu
+    # Các dấu hiệu ngắt câu tốt nhất cho văn bản kỹ thuật
     separators = [
-        "\n\n\n",  # Multiple newlines
-        "\n\n",    # Paragraph break
-        "\n",      # Line break
-        ". ",      # Sentence end
-        "! ",      # Exclamation
-        "? ",      # Question
-        "; ",      # Semicolon
-        ", ",      # Comma
-        " ",       # Space
-        ""         # Character
+        "\n\n\n", "\n\n", "\n", 
+        ". ", "! ", "? ", "; ", ", ", 
+        " ", ""
     ]
     
     splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
         chunk_size=chunk_size,
-        chunk_overlap=overlap,
+        chunk_overlap=chunk_overlap,
         separators=separators,
         keep_separator=True,
     )
     
-    chunks = splitter.split_text(text)
-    return [chunk.strip() for chunk in chunks if chunk.strip()]
+    return splitter.split_text(text)
 
-
-def _post_process_chunks(chunks: List[str]) -> List[str]:
-    """
-    Post-processing: lọc noise, merge chunks quá nhỏ.
-    """
-    processed = []
-    
-    for chunk in chunks:
-        # Skip chunks quá ngắn hoặc là noise
-        if len(chunk) < 50:
-            continue
+def _chunk_table(table_md: str, max_size: int) -> List[str]:
+    """Chia nhỏ bảng nhưng luôn giữ lại dòng header."""
+    lines = table_md.strip().split('\n')
+    if len(lines) <= 2:
+        return [table_md] # Bảng không có nội dung
         
-        if _is_noise_chunk(chunk):
-            continue
+    header = f"{lines[0]}\n{lines[1]}"
+    rows = lines[2:]
+    
+    if len(table_md) <= max_size:
+        return [table_md]
         
-        # Clean whitespace
-        chunk = re.sub(r'\n{3,}', '\n\n', chunk)
-        chunk = chunk.strip()
+    # Chia thành các bảng con
+    sub_tables = []
+    current_rows = []
+    current_len = len(header)
+    
+    for row in rows:
+        if current_len + len(row) > max_size and current_rows:
+            sub_tables.append(f"{header}\n" + "\n".join(current_rows))
+            current_rows = []
+            current_len = len(header)
         
-        processed.append(chunk)
-    
-    # Merge chunks quá nhỏ với chunk trước đó
-    merged = []
-    for i, chunk in enumerate(processed):
-        if i == 0:
-            merged.append(chunk)
-        elif len(chunk) < 100 and len(merged[-1]) < 400:
-            # Merge với chunk trước
-            merged[-1] = merged[-1] + "\n\n" + chunk
-        else:
-            merged.append(chunk)
-    
-    return merged
+        current_rows.append(row)
+        current_len += len(row)
+        
+    if current_rows:
+        sub_tables.append(f"{header}\n" + "\n".join(current_rows))
+        
+    return sub_tables
 
-
-def _is_noise_chunk(chunk: str) -> bool:
-    """Kiểm tra chunk có phải là noise không."""
-    # Chỉ có số, dấu cách, ký tự đặc biệt
-    if re.match(r'^[\d\s\-_|\.]+$', chunk):
+def _is_noise(text: str, min_words: int = 5, min_chars: int = 20) -> bool:
+    """Kiểm tra một chunk có phải là nhiễu không (ví dụ: số trang, header)."""
+    text = text.strip()
+    # Loại bỏ các chunk quá ngắn
+    if len(text) < min_chars:
         return True
-    
-    # Quá ít từ có nghĩa
-    words = [w for w in chunk.split() if len(w) > 2]
-    if len(words) < 5:
+    # Loại bỏ các chunk có quá ít từ
+    if len(re.findall(r'\w+', text)) < min_words:
         return True
-    
-    # Repeated pattern (watermark, header)
-    lines = chunk.split('\n')
-    if len(lines) > 2 and len(set(lines)) < len(lines) * 0.5:
+    # Loại bỏ các chunk chỉ chứa ký tự lặp lại hoặc ký tự đặc biệt
+    if re.fullmatch(r'[\s\d\W_]+', text):
         return True
-    
     return False
 
+def _post_process_chunks(chunks: List[str], min_chunk_size: int = 50) -> List[str]:
+    """Lọc bỏ nhiễu và hợp nhất các chunk quá nhỏ."""
+    # Lọc bỏ nhiễu
+    filtered_chunks = [c.strip() for c in chunks if not _is_noise(c)]
+    
+    if not filtered_chunks:
+        return []
+
+    # Hợp nhất các chunk nhỏ
+    merged_chunks = []
+    current_chunk = filtered_chunks[0]
+    
+    for i in range(1, len(filtered_chunks)):
+        next_chunk = filtered_chunks[i]
+        # Nếu chunk hiện tại quá nhỏ, hợp nhất với chunk tiếp theo
+        if len(current_chunk) < min_chunk_size:
+            current_chunk += "\n\n" + next_chunk
+        else:
+            merged_chunks.append(current_chunk)
+            current_chunk = next_chunk
+            
+    merged_chunks.append(current_chunk) # Thêm chunk cuối cùng
+    
+    return merged_chunks

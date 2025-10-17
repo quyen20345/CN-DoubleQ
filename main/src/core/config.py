@@ -9,11 +9,12 @@ sys.path.insert(0, str(project_root))
 def setup_paths(mode: str) -> dict:
     """Thiết lập và xác thực các đường dẫn input và output."""
     if mode == "public":
-        base_input_dir = project_root / f"main/data/{mode}_test_input/{mode}-test-input"
+        base_input_dir = project_root / f"data/{mode}_test_input/{mode}-test-input"
     elif mode == "private":
-        base_input_dir = project_root / f"main/data/{mode}_test_input/{mode}_test_input"
+        base_input_dir = project_root / f"data/{mode}_test_input/{mode}_test_input"
     else:
-        base_input_dir = project_root / f"main/data/{mode}_test_input/{mode}_input"
+        base_input_dir = project_root / f"data/{mode}_test_input/{mode}_input"
+
 
     output_dir = project_root / f"output/{mode}_test_output"
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -32,6 +33,10 @@ def setup_paths(mode: str) -> dict:
 
     print("\n--- Cấu hình đường dẫn ---")
     for k, v in paths.items():
-        print(f"{k:<15}: {Path(v).relative_to(project_root)}")
+        try:
+            print(f"{k:<15}: {Path(v).relative_to(project_root)}")
+        except Exception:
+            print(f"{k:<15}: {v}")
     print("---------------------------\n")
+
     return paths
